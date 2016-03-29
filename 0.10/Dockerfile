@@ -1,15 +1,22 @@
 FROM debian:jessie
 
 RUN apt-get update \
-    && apt-get install -y --no-install-recommends \
-    ca-certificates apt-transport-https
+    && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+    ca-certificates \
+    apt-transport-https \
+    gnupg \
+    wget
 
-RUN apt-key adv --keyserver ha.pool.sks-keyservers.net --recv-keys 684A14CF2582E0C5 && \
-    echo "deb https://repos.influxdata.com/debian jessie stable" > /etc/apt/sources.list.d/influxdata.list && \
-    apt-get update
+RUN wget https://repos.influxdata.com/influxdb.key && \
+    gpg --import influxdb.key && \
+    rm -f influxdb.key
 
-ENV KAPACITOR_VERSION 0.10.1-1
-RUN apt-get install -y kapacitor=$KAPACITOR_VERSION
+ENV KAPACITOR_VERSION 0.10.1
+RUN wget https://s3.amazonaws.com/kapacitor/kapacitor_$KAPACITOR_VERSION-1_amd64.deb.asc && \
+    wget https://s3.amazonaws.com/kapacitor/kapacitor_$KAPACITOR_VERSION-1_amd64.deb && \
+    gpg --verify kapacitor_$KAPACITOR_VERSION-1_amd64.deb.asc kapacitor_$KAPACITOR_VERSION-1_amd64.deb && \
+    dpkg -i kapacitor_$KAPACITOR_VERSION-1_amd64.deb && \
+    rm -f kapacitor_$KAPACITOR_VERSION-1_amd64.deb*
 
 EXPOSE 9092
 
