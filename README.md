@@ -4,75 +4,52 @@ Kapacitor is a data processing engine. It can process both stream and batch data
 
 ## Using this image
 
-Following example uses Kapacitor along with InfluxDB and Telegraf
+Start the Kapacitor container with default options:
 
-#### InfluxDB Setup
+	docker run --net=host -v /path/on/host/kapacitorFiles/:/var/lib/kapacitor kapacitor
 
-Start InfluxDB container
+Start the Kapacitor container with custom configuration.
 
-	docker run --net=host  influxdb
+    docker run --net=host -v /path/on/host/kapacitor.config:/etc/kapacitor/kapacitor.conf:ro -v /path/on/host/kapacitorFiles/:/var/lib/kapacitor kapacitor
 
-Verify that InfluxDB is running by accessing the WEB admin interface [http://localhost:8083/](http://localhost:8083/)
+Start the Kapacitor container with custom configuration using env vars.
 
-#### Telegraf Setup
+    docker run --net=host -e KAPACITOR_LOGGING_LEVEL=DEBUG -v /path/on/host/kapacitorFiles/:/var/lib/kapacitor kapacitor
 
-Create following config file 'telegraf.conf'
 
-	[agent]
-	    interval = "1s"
-	[outputs]
-	# Configuration to send data to InfluxDB.
-	[outputs.influxdb]
-	    urls = ["http://localhost:8086"]
-	    database = "kapacitor_example"
-	    user_agent = "telegraf"
-	# Collect metrics about cpu usage
-	[cpu]
-	    percpu = false
-	    totalcpu = true
-	    drop = ["cpu_time"]
+## Using the CLI
 
-Start Telegraf using the above config. In this example Telegraf runs on the host and not in a docker container.
+The kapacitor CLI binary is also included in the image.
+To start a container for communicating with the kapacitor daemon, change the entrypoint
 
-	telegraf -config telegraf.conf
+    docker run -it --entrypoint=bash -v /path/on/host/kapacitorFiles/:/var/lib/kapacitor kapacitor
 
-Again check InfluxDB via the WEB admin interface [http://localhost:8083/](http://localhost:8083/). A database by the name `kapacitor_example` should be added.
+Then from within the container you can use the `kapacitor` command to interact with the daemon.
+Assuming you have Telegraf + InfluxDB + Kapacitor all hooked up,
+then create a file `cpu_alert.tick`.
+If not then see the [docker-compose](https://docs.docker.com/compose/) [TICK stack](https://github.com/influxdata/TICK-docker) environment for easy setup.
 
-#### Kapacitor Setup
+```sh
+cat > cpu_alert.tick << EOF
+stream
+    // Select just the cpu measurement from our example database.
+    |from()
+        .measurement('cpu')
+    |alert()
+        .crit(lambda: "usage_idle" < 100 )
+        // Whenever we get an alert notify slack
+        .slack()
+EOF
+```
 
-Start the Kapacitor container
+Then define, enable and watch the status of the task:
 
-	docker run -i --name kapacitor  --net=host -v /path/on/host/kapacitorFiles/:/root/ kapacitor
+    kapacitor define -name cpu_alert -type stream -dbrp telegraf.default -tick cpu_alert.tick
+    kapacitor enable cpu_alert
+    kapacitor show cpu_alert
 
-Use `docker exec` to run a command in the existing container
 
-	docker exec -it KAPACITOR_CONTAINER_ID bash
-
-`$(docker ps | awk '{if ($2 == "kapacitor") print $1}')` gives the ID for the Kapacitor container. You can also find the id by `docker ps`
-
-On the host machine create a file `cpu_alert.tick` at `/path/on/host/kapacitorFiles/` which is mounted at `/root/` on the Kapacitor container
-
-	    stream
-	    // Select just the cpu measurement from our example database.
-	    .from().measurement('cpu')
-	    .alert()
-	        .crit(lambda: "usage_idle" < 100 )
-	        // Whenever we get an alert write it to a file.
-	        .log('/root/alerts.log')
-
-In the Kapacitor container run the following commands
-
-	    cd /root/
-	    ls             # Check you have the cpu_alert.tick listed
-	    kapacitor define -name cpu_alert -type stream -tick cpu_alert.tick -dbrp kapacitor_example.default
-	    rid=$(kapacitor record stream -name cpu_alert -duration 20s)
-	    kapacitor list recordings $rid #Confirm recording captured data
-	    kapacitor replay -id $rid -name cpu_alert -fast #Replay data to task
-	    cat /root/alerts.log  #Check the log
-	    kapacitor enable cpu_alert #Enable the alert to start processing live data
-	    kapacitor show cpu_alert
-
-See [this](https://docs.influxdata.com/kapacitor/v0.10/introduction/getting_started/) for a more detailed description of steps involved in this example
+See [this](https://docs.influxdata.com/kapacitor/latest/introduction/getting_started/) for a more detailed guide.
 
 ## Supported Docker versions
 
