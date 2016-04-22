@@ -13,6 +13,8 @@ RUN wget -q https://s3.amazonaws.com/kapacitor/kapacitor_$KAPACITOR_VERSION-1_am
 
 EXPOSE 9092
 
+VOLUME /var/lib/kapacitor
+
 COPY entrypoint.sh /entrypoint.sh
 ENTRYPOINT ["/entrypoint.sh"]
 CMD ["kapacitord", "-config", "/etc/kapacitor/kapacitor.conf", "-log-file", "STDERR"]
