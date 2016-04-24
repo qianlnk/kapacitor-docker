@@ -17,4 +17,4 @@ VOLUME /var/lib/kapacitor
 
 COPY entrypoint.sh /entrypoint.sh
 ENTRYPOINT ["/entrypoint.sh"]
-CMD ["kapacitord", "-config", "/etc/kapacitor/kapacitor.conf", "-log-file", "STDERR"]
+CMD ["kapacitord"]
