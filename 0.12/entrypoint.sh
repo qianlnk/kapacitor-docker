@@ -8,7 +8,22 @@ fi
 # TODO remove -config from this for 0.13 (leaving -log-file only)
 if [ "$1" = 'kapacitord' ]; then
     shift
-    set -- kapacitord -config /etc/kapacitor/kapacitor.conf -log-file STDERR "$@"
+    case $1 in
+      config)
+        shift
+        set -- kapacitord config -config /etc/kapacitor/kapacitor.conf "$@"
+        ;;
+      run)
+        shift
+        set -- kapacitord run -config /etc/kapacitor/kapacitor.conf -log-file STDERR "$@"
+        ;;
+      -*)
+        set -- kapacitord -config /etc/kapacitor/kapacitor.conf -log-file STDERR "$@"
+        ;;
+      *)
+        set -- kapacitord "$@"
+        ;;
+    esac
 fi
 
 exec "$@"
