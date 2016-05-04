@@ -26,4 +26,7 @@ if [ "$1" = 'kapacitord' ]; then
     esac
 fi
 
+KAPACITOR_HOSTNAME=${KAPACITOR_HOSTNAME:-$HOSTNAME}
+export KAPACITOR_HOSTNAME
+
 exec "$@"
