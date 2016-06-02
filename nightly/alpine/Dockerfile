@@ -10,7 +10,8 @@ RUN wget -q https://dl.influxdata.com/kapacitor/nightlies/kapacitor-static-night
     wget -q https://dl.influxdata.com/kapacitor/nightlies/kapacitor-static-nightly_linux_amd64.tar.gz.asc && \
     gpg --batch --verify kapacitor-static-nightly_linux_amd64.tar.gz.asc kapacitor-static-nightly_linux_amd64.tar.gz && \
     tar -xvzf kapacitor-static-nightly_linux_amd64.tar.gz && \
-    mv -v kapacitor*/* / && \
+    mv -v kapacitor*/* /usr/bin/ && \
+    rm -f /usr/bin/kapacitor.conf && \
     rm -rf kapacitor-static-nightly_linux_amd64.tar.gz
 
 EXPOSE 9092
@@ -19,4 +20,4 @@ VOLUME /var/lib/kapacitor
 
 COPY entrypoint.sh /entrypoint.sh
 ENTRYPOINT ["/entrypoint.sh"]
-CMD ["/kapacitord"]
+CMD ["kapacitord"]
